@@ -12,19 +12,21 @@ module.exports = function(grunt) {
   function spawn(task) {
     var deferred = Q.defer();
 
-    grunt.util.spawn(task, function(error, result, code) {
-      if (error || code !== 0) {
-        grunt.log.error(result.stderr || result.stdout);
-        if (error.message) {
-          grunt.log(error.message);
-        }
-        return deferred.reject();
+    var child = grunt.util.spawn(task, function(error, result, code) {
+      if (code !== 0) {
+        !child && grunt.log.error(error);
+        deferred.reject();
       }
 
-      grunt.log.write(result.toString('ascii'));
-
-      deferred.resolve();
+      else {
+        deferred.resolve();
+      }
     });
+
+    if (child) {
+      child.stdout.on('data', function(d) { grunt.log.write(String(d)); });
+      child.stderr.on('data', function(d) { grunt.log.error(String(d)); });
+    }
 
     return deferred.promise;
   }
